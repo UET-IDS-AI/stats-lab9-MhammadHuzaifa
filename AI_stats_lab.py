@@ -1,15 +1,17 @@
-
----
-
 ## `AI_stats_lab.py`
-
-```python
 import numpy as np
 
 
 # -------------------------------------------------
 # Sparse 4 by 4 Joint PMF
 # -------------------------------------------------
+
+PMF_table = {
+    (0,0) : 0.10,(0,1) : 0.05,(0,2) : 0.00,(0,3) : 0.00,
+    (1,0) : 0.15,(1,1) : 0.20,(1,2) : 0.05,(1,3) : 0.00,
+    (2,0) : 0.00,(2,1) : 0.10,(2,2) : 0.15,(2,3) : 0.05,
+    (3,0) : 0.00,(3,1) : 0.00,(3,2) : 0.05,(3,3) : 0.10
+}
 
 def joint_pmf(x, y):
     """
@@ -21,22 +23,23 @@ def joint_pmf(x, y):
     x=2      0.00  0.10  0.15  0.05
     x=3      0.00  0.00  0.05  0.10
     """
-    pass
+    return PMF_table.get((x,y), 0.0)
+    
 
 
 def marginal_px(x):
     """
     Compute PX(x) by summing joint_pmf(x, y) over y = 0,1,2,3.
     """
-    pass
+    return sum(joint_pmf(x,y) for y in range(4))
 
 
 def marginal_py(y):
     """
     Compute PY(y) by summing joint_pmf(x, y) over x = 0,1,2,3.
     """
-    pass
-
+    return sum(joint_pmf(x,y) for x in range(4))
+    
 
 def conditional_pmf_x_given_y(x, y):
     """
@@ -46,7 +49,9 @@ def conditional_pmf_x_given_y(x, y):
 
     If PY(y) is zero, return 0.
     """
-    pass
+    # p_y = marginal_py(y)
+
+    return joint_pmf(x,y) / marginal_py(y) if marginal_py(y) != 0 else 0.0
 
 
 def conditional_distribution_x_given_y(y):
@@ -61,14 +66,19 @@ def conditional_distribution_x_given_y(y):
         3: P(X=3 given Y=y)
     }
     """
-    pass
+    return { x : conditional_pmf_x_given_y(x,y) for x in range(4) }
 
 
 def probability_sum_greater_than_3():
     """
     Compute P(X + Y > 3).
     """
-    pass
+    prob = 0
+    for x in range(4):
+        for y in range(4):
+            if x+y > 3:
+                prob += joint_pmf(x,y)
+    return prob
 
 
 def independence_check():
@@ -81,7 +91,13 @@ def independence_check():
 
     for every x and y.
     """
-    pass
+    for x in range(4):
+        for y in range(4):
+            lhs = joint_pmf(x,y)
+            rhs = marginal_px(x) * marginal_px(y)
+            if not np.isclose(lhs, rhs):
+                return False
+    return True
 
 
 # -------------------------------------------------
@@ -92,35 +108,44 @@ def expected_x():
     """
     Compute E[X].
     """
-    pass
+    return sum( x * marginal_px(x) for x in range(4) )
 
 
 def expected_y():
     """
     Compute E[Y].
     """
-    pass
+    return sum( y * marginal_py(y) for y in range(4) )
 
 
 def expected_xy():
     """
     Compute E[XY].
     """
-    pass
+    total = 0.0
+    for x in range(4):
+        for y in range(4):
+            total += x * y * joint_pmf(x, y)
+    return total
 
 
 def variance_x():
     """
     Compute Var(X).
     """
-    pass
+    ex = expected_x()
+    ex2 = sum( (x ** 2) * marginal_px(x) for x in range(4) )
+    return ex2 - (ex ** 2)
 
 
 def variance_y():
     """
     Compute Var(Y).
     """
-    pass
+    ey = expected_y()
+    ey2 = sum( (y ** 2) * marginal_py(y) for y in range(4) )
+    return ey2 - (ey ** 2)
+    
 
 
 def covariance_xy():
@@ -129,7 +154,7 @@ def covariance_xy():
 
     Cov(X,Y) = E[XY] - E[X]*E[Y]
     """
-    pass
+    return expected_xy() - (expected_x() * expected_y())
 
 
 def correlation_xy():
@@ -138,14 +163,25 @@ def correlation_xy():
 
     rho_XY = Cov(X,Y) / sqrt( Var(X) * Var(Y) )
     """
-    pass
+    return covariance_xy() / (variance_x() * variance_y())**(1/2)
 
 
 def variance_sum():
     """
     Compute Var(X+Y).
     """
-    pass
+    ex_plus_y = 0.0
+    ex_plus_y_sq = 0.0
+
+    for x in range(4):
+        for y in range(4):
+            value = x + y
+            p = joint_pmf(x, y)
+
+            ex_plus_y += value * p
+            ex_plus_y_sq += (value ** 2) * p
+
+    return ex_plus_y_sq - (ex_plus_y ** 2)
 
 
 def variance_identity_check():
@@ -156,4 +192,12 @@ def variance_identity_check():
 
     Return True if the identity holds, else False.
     """
-    pass
+    for x in range(4):
+        for y in range(4):
+            var_x_plus_y = variance_sum()
+            cov_x_y = covariance_xy()
+
+            if not np.isclose(var_x_plus_y ,  (variance_x() + variance_y() + 2*cov_x_y)):
+                return False
+    return True
+            
